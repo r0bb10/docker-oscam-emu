@@ -1,9 +1,6 @@
 name: Build and Push Docker Images
 
 on:
-  push:
-    branches:
-      - master  # or main, depending on your default branch
   workflow_dispatch:  # Allows you to manually trigger the action from the Actions tab
 
 jobs:
