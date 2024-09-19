@@ -1,4 +1,4 @@
-name: Sync Fork with Upstream and Build Docker Images
+name: Sync Fork with Upstream and Build Docker Image
 
 on:
   schedule:
@@ -13,7 +13,7 @@ jobs:
       - name: Checkout the repository
         uses: actions/checkout@v2
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Ensures we fetch all history so we can make changes to any branch
 
       - name: Set up Git
         run: |
@@ -28,16 +28,19 @@ jobs:
 
       - name: Merge upstream into your branch (Ignore specific files)
         run: |
-          git checkout master
-          git merge upstream/master --no-commit
-          git restore --staged README.md
-          git checkout -- README.md
-          git commit -m "Sync with upstream, keeping my README.md unchanged"
+          git checkout master  # or main, depending on your default branch
+          git merge upstream/master --no-commit || echo "No changes to merge"
+          if [ $? -eq 0 ]; then
+            # Restore files if merge was successful
+            git restore --staged README.md
+            git checkout -- README.md
+            git commit -m "Sync with upstream, keeping my README.md unchanged" || echo "No changes to commit"
+            git push origin master || echo "No changes to push"
+          else
+            echo "No new changes from upstream."
+          fi
 
-      - name: Push changes to your fork
-        run: git push origin master
-
-      # Build the x86_64 (standard) Docker image
+      # Build the Docker image only if there were changes
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
@@ -48,18 +51,19 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build and push x86_64 Docker image
+        if: success() && steps.merge.outputs.changed == 'true'
         uses: docker/build-push-action@v4
         with:
           context: .
-          file: ./Dockerfile  # Build Dockerfile for x86_64 architecture
+          file: ./Dockerfile
           push: true
-          tags: chris230291/docker-oscam:latest, chris230291/docker-oscam:x86_64
+          tags: chris230291/docker-oscam-emu:latest, chris230291/docker-oscam-emu:x86_64
 
-      # Build the ARM64 (aarch64) Docker image
       - name: Build and push aarch64 Docker image
+        if: success() && steps.merge.outputs.changed == 'true'
         uses: docker/build-push-action@v4
         with:
           context: .
-          file: ./Dockerfile.aarch64  # Build Dockerfile for ARM architecture
+          file: ./Dockerfile.aarch64
           push: true
-          tags: chris230291/docker-oscam:latest-arm64, chris230291/docker-oscam:aarch64
+          tags: chris230291/docker-oscam-emu:latest-arm64, chris230291/docker-oscam-emu:aarch64

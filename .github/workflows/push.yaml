@@ -1,0 +1,42 @@
+name: Build and Push Docker Images
+
+on:
+  push:
+    branches:
+      - master  # or main, depending on your default branch
+  workflow_dispatch:  # Allows you to manually trigger the action from the Actions tab
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # Fetch all history if needed
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push x86_64 Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: chris230291/docker-oscam-emu:latest, chris230291/docker-oscam-emu:x86_64
+
+      - name: Build and push aarch64 Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile.aarch64
+          push: true
+          tags: chris230291/docker-oscam-emu:latest-arm64, chris230291/docker-oscam-emu:aarch64
