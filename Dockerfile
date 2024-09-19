@@ -7,7 +7,7 @@ ARG BUILD_DATE
 ARG VERSION
 ARG OSCAM_VERSION
 LABEL build_version="Linuxserver.io version:- ${VERSION} Build-date:- ${BUILD_DATE}"
-LABEL maintainer="saarg"
+LABEL maintainer="Chris"
 
 ENV \
   MAKEFLAGS="-j4"
@@ -20,7 +20,8 @@ RUN \
     libusb-dev \
     linux-headers \
     openssl-dev \
-    pcsc-lite-dev && \
+    pcsc-lite-dev \
+    git && \
   echo "**** install runtime packages ****" && \
   apk add --no-cache \
     ccid \
@@ -30,16 +31,8 @@ RUN \
     pcsc-lite \
     pcsc-lite-libs && \
   echo "**** compile oscam ****" && \
-  if [ -z ${OSCAM_VERSION+x} ]; then \
-    OSCAM_VERSION=$(curl -s https://git.streamboard.tv/api/v4/projects/11/repository/tags | jq -r '.[0].name'); \
-  fi && \
   mkdir -p /tmp/oscam && \
-  curl -o \
-    /tmp/oscam.tar.gz -L \
-    "https://git.streamboard.tv/common/oscam/-/archive/${OSCAM_VERSION}/oscam-${OSCAM_VERSION}.tar.gz" && \
-  tar xf \
-    /tmp/oscam.tar.gz -C \
-    /tmp/oscam --strip-components=1 && \
+  git clone https://github.com/oscam-emu/oscam-patched /tmp/oscam && \
   cd /tmp/oscam && \
   ./config.sh \
     --enable all \

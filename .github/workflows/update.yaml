@@ -1,0 +1,65 @@
+name: Sync Fork with Upstream and Build Docker Images
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'  # This will run the action weekly on Sundays at midnight
+  workflow_dispatch:  # Allows you to manually trigger the action from the Actions tab
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Set up Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Add upstream remote
+        run: git remote add upstream https://github.com/linuxserver/docker-oscam.git
+
+      - name: Fetch upstream changes
+        run: git fetch upstream
+
+      - name: Merge upstream into your branch (Ignore specific files)
+        run: |
+          git checkout master
+          git merge upstream/master --no-commit
+          git restore --staged README.md
+          git checkout -- README.md
+          git commit -m "Sync with upstream, keeping my README.md unchanged"
+
+      - name: Push changes to your fork
+        run: git push origin master
+
+      # Build the x86_64 (standard) Docker image
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push x86_64 Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile  # Build Dockerfile for x86_64 architecture
+          push: true
+          tags: chris230291/docker-oscam:latest, chris230291/docker-oscam:x86_64
+
+      # Build the ARM64 (aarch64) Docker image
+      - name: Build and push aarch64 Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: ./Dockerfile.aarch64  # Build Dockerfile for ARM architecture
+          push: true
+          tags: chris230291/docker-oscam:latest-arm64, chris230291/docker-oscam:aarch64
