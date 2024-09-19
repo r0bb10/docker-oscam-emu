@@ -57,13 +57,4 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: chris230291/docker-oscam-emu:latest, chris230291/docker-oscam-emu:x86_64
-
-      - name: Build and push aarch64 Docker image
-        if: success() && steps.merge.outputs.changed == 'true'
-        uses: docker/build-push-action@v4
-        with:
-          context: .
-          file: ./Dockerfile.aarch64
-          push: true
-          tags: chris230291/docker-oscam-emu:latest-arm64, chris230291/docker-oscam-emu:aarch64
+          tags: chris230291/docker-oscam-emu:latest
