@@ -72,7 +72,7 @@ RUN \
   groupmod -g 24 cron && \
   groupmod -g 16 dialout && \
   usermod -a -G 16 abc && \
-  printf "Linuxserver.io version: ${VERSION}\nBuild-date: ${BUILD_DATE}" > /build_version && \
+  printf "Version: ${VERSION}\nBuild-date: ${BUILD_DATE}" > /build_version && \
   echo "**** cleanup ****" && \
   apk del --purge \
     build-dependencies && \
