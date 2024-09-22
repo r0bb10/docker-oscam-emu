@@ -28,4 +28,4 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: chris230291/docker-oscam-emu:latest
+          tags: chris230291/oscam-emu:latest
