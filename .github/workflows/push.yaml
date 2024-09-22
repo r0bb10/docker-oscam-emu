@@ -28,7 +28,7 @@ jobs:
     - name: Build and push
       uses: docker/build-push-action@v3
       with:
-        file: ${{ matrix.arch == 'arm64' && 'Dockerfile.arm64' || 'Dockerfile' }}
+        file: ${{ matrix.arch == 'arm64' && 'Dockerfile.aarch64' || 'Dockerfile' }}
         platforms: linux/amd64,linux/arm64
         push: true
         tags: chris230291/oscam-emu:latest
