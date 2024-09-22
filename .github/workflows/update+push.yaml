@@ -8,6 +8,8 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.merge.outputs.changed }}  # Capture output
 
     steps:
       - name: Checkout the repository
@@ -27,6 +29,7 @@ jobs:
         run: git fetch upstream
 
       - name: Merge upstream into your branch (Ignore specific files)
+        id: merge  # Add an ID for this step
         run: |
           git checkout master  # or main, depending on your default branch
           git merge upstream/master --no-commit || echo "No changes to merge"
@@ -36,25 +39,39 @@ jobs:
             git checkout -- README.md
             git commit -m "Sync with upstream, keeping my README.md unchanged" || echo "No changes to commit"
             git push origin master || echo "No changes to push"
+            echo "::set-output name=changed::true"  # Set output to true
           else
+            echo "::set-output name=changed::false"  # Set output to false
             echo "No new changes from upstream."
           fi
 
-      # Build the Docker image only if there were changes
+  build:
+    runs-on: ubuntu-latest
+    needs: sync  # Ensure this job runs after the sync job
+    if: needs.sync.outputs.changed == 'true'  # Run only if there were changes
+    steps:
+      - uses: actions/checkout@v2
+
+      # Set up QEMU for emulation
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      # Set up Docker Buildx for multi-platform builds
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Log in to Docker Hub
+      # Log in to Docker Hub
+      - name: Login to Docker Hub
         uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and push x86_64 Docker image
-        if: success() && steps.merge.outputs.changed == 'true'
-        uses: docker/build-push-action@v4
+      # Build and push multi-arch images
+      - name: Build and push
+        uses: docker/build-push-action@v3
         with:
-          context: .
-          file: ./Dockerfile
+          file: ${{ matrix.arch == 'arm64' && 'Dockerfile.arm64' || 'Dockerfile' }}
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: chris230291/oscam-emu:latest
